@@ -36,3 +36,19 @@ export const set_name = spacetimedb.reducer({ name: t.string() }, (ctx, { name }
   }
   ctx.db.user.identity.update({ ...user, name });
 });
+
+function validateMessage(text: string) {
+  if (!text) {
+    throw new SenderError('Messages must not be empty');
+  }
+}
+
+export const send_message = spacetimedb.reducer({ text: t.string() }, (ctx, { text }) => {
+  validateMessage(text);
+  console.info(`User ${ctx.sender}: ${text}`);
+  ctx.db.message.insert({
+    sender: ctx.sender,
+    text,
+    sent: ctx.timestamp,
+  });
+});
