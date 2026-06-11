@@ -1,122 +1,165 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import React, { useState } from 'react';
+import { tables, reducers } from './module_bindings';
+import type * as Types from './module_bindings/types';
+import { useSpacetimeDB, useTable, useReducer } from 'spacetimedb/react';
+import { Identity, Timestamp } from 'spacetimedb';
+import './App.css';
+
+export type PrettyMessage = {
+  senderName: string;
+  text: string;
+  sent: Timestamp;
+  kind: 'system' | 'user';
+};
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [newName, setNewName] = useState('');
+  const [settingName, setSettingName] = useState(false);
+  const [systemMessages, setSystemMessages] = useState([] as Types.Message[]);
+  const [newMessage, setNewMessage] = useState('');
+
+  const onlineUsers: Types.User[] = [];
+  const offlineUsers: Types.User[] = [];
+  const users = [...onlineUsers, ...offlineUsers];
+  const prettyMessages: PrettyMessage[] = [];
+
+  const name = '';
+
+  const onSubmitNewName = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setSettingName(false);
+    // TODO: Call `setName` reducer
+  };
+
+  const onSubmitMessage = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setNewMessage('');
+    // TODO: Call `sendMessage` reducer
+  };
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
+    <div className="App">
+      <div className="profile">
+        <h1>Profile</h1>
+        {!settingName ? (
+          <>
+            <p>{name}</p>
+            <button
+              onClick={() => {
+                setSettingName(true);
+                setNewName(name);
+              }}
+            >
+              Edit Name
+            </button>
+          </>
+        ) : (
+          <form onSubmit={onSubmitNewName}>
+            <input
+              type="text"
+              aria-label="username input"
+              value={newName}
+              onChange={e => setNewName(e.target.value)}
+            />
+            <button type="submit">Submit</button>
+          </form>
+        )}
+      </div>
+      <div className="message-panel">
+        <h1>Messages</h1>
+        {prettyMessages.length < 1 && <p>No messages</p>}
+        <div className="messages">
+          {prettyMessages.map((message, key) => {
+            const sentDate = message.sent.toDate();
+            const now = new Date();
+            const isOlderThanDay =
+              now.getFullYear() !== sentDate.getFullYear() ||
+              now.getMonth() !== sentDate.getMonth() ||
+              now.getDate() !== sentDate.getDate();
+
+            const timeString = sentDate.toLocaleTimeString([], {
+              hour: '2-digit',
+              minute: '2-digit',
+            });
+            const dateString = isOlderThanDay
+              ? sentDate.toLocaleDateString([], {
+                  year: 'numeric',
+                  month: 'short',
+                  day: 'numeric',
+                }) + ' '
+              : '';
+
+            return (
+              <div
+                key={key}
+                className={
+                  message.kind === 'system' ? 'system-message' : 'user-message'
+                }
+              >
+                <p>
+                  <b>
+                    {message.kind === 'system' ? 'System' : message.senderName}
+                  </b>
+                  <span
+                    style={{
+                      fontSize: '0.8rem',
+                      marginLeft: '0.5rem',
+                      color: '#666',
+                    }}
+                  >
+                    {dateString}
+                    {timeString}
+                  </span>
+                </p>
+                <p>{message.text}</p>
+              </div>
+            );
+          })}
         </div>
+      </div>
+      <div className="online" style={{ whiteSpace: 'pre-wrap' }}>
+        <h1>Online</h1>
         <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
+          {onlineUsers.map((user, key) => (
+            <div key={key}>
+              <p>{user.name || user.identity.toHexString().substring(0, 8)}</p>
+            </div>
+          ))}
         </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
+        {offlineUsers.length > 0 && (
+          <div>
+            <h1>Offline</h1>
+            {offlineUsers.map((user, key) => (
+              <div key={key}>
+                <p>
+                  {user.name || user.identity.toHexString().substring(0, 8)}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+      <div className="new-message">
+        <form
+          onSubmit={onSubmitMessage}
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            width: '50%',
+            margin: '0 auto',
+          }}
         >
-          Count is {count}
-        </button>
-      </section>
-
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+          <h3>New Message</h3>
+          <textarea
+            aria-label="message input"
+            value={newMessage}
+            onChange={e => setNewMessage(e.target.value)}
+          ></textarea>
+          <button type="submit">Send</button>
+        </form>
+      </div>
+    </div>
+  );
 }
 
-export default App
+export default App;
