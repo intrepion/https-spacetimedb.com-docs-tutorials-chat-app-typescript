@@ -13,17 +13,50 @@ export type PrettyMessage = {
 };
 
 function App() {
+  const { identity, isActive: connected } = useSpacetimeDB();
+  const setName = useReducer(reducers.setName);
+  const sendMessage = useReducer(reducers.sendMessage);
+
+  // Subscribe to all messages in the chat
+  const [messages] = useTable(tables.message);
   const [newName, setNewName] = useState('');
   const [settingName, setSettingName] = useState(false);
   const [systemMessages, setSystemMessages] = useState([] as Types.Message[]);
   const [newMessage, setNewMessage] = useState('');
 
-  const onlineUsers: Types.User[] = [];
+  // Subscribe to all online users in the chat
+  // using the query builder's `.where()` method
+  const [onlineUsers] = useTable(
+    tables.user.where(r => r.online.eq(true))
+  );
   const offlineUsers: Types.User[] = [];
   const users = [...onlineUsers, ...offlineUsers];
-  const prettyMessages: PrettyMessage[] = [];
+  const prettyMessages: PrettyMessage[] = messages
+    .sort((a, b) => (a.sent.toDate() > b.sent.toDate() ? 1 : -1))
+    .map(message => {
+      const user = users.find(
+        u => u.identity.toHexString() === message.sender.toHexString()
+      );
+      return {
+        senderName: user?.name || message.sender.toHexString().substring(0, 8),
+        text: message.text,
+        sent: message.sent,
+        kind: Identity.zero().isEqual(message.sender) ? 'system' : 'user',
+      };
+    });
 
-  const name = '';
+  if (!connected || !identity) {
+    return (
+      <div className="App">
+        <h1>Connecting...</h1>
+      </div>
+    );
+  }
+
+  const name = (() => {
+    const user = users.find(u => u.identity.isEqual(identity));
+    return user?.name || identity?.toHexString().substring(0, 8) || '';
+  })();
 
   const onSubmitNewName = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
