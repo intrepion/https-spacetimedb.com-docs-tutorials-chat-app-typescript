@@ -61,13 +61,13 @@ function App() {
   const onSubmitNewName = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setSettingName(false);
-    // TODO: Call `setName` reducer
+    setName({ name: newName });
   };
 
   const onSubmitMessage = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setNewMessage('');
-    // TODO: Call `sendMessage` reducer
+    sendMessage({ text: newMessage });
   };
 
   return (
